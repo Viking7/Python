@@ -1,0 +1,33 @@
+from __future__ import print_function
+import pandas as pd
+import numpy as np
+df = pd.read_excel("Datadump.xlsx")
+#df.head()
+
+dfp = df.groupby(['LP Schedule A Name','Display Deal Name'])[ 'ROC Proceeds','AFE','Recouped Loss','Gain','Income','Carry','Total Distribution'].sum().reset_index()
+dfp.head()
+
+#Create Template using Jinja
+from jinja2 import Environment, FileSystemLoader
+from weasyprint import HTML
+
+env = Environment(loader=FileSystemLoader('.'))
+template = env.get_template("template2.html")
+
+#Render HTML and print to PDF
+def print_pdfs(schedule, counter):
+    template_vars = {"title" : "Distribution Schedule A",
+                     "sched_A1_table": schedule.to_html(),
+                    "fund_name": "BREP Asia II L.P.",
+                    "header": "Non-Promotable Gain"}
+
+    html_out = template.render(template_vars)
+    HTML(string=html_out, base_url=".").write_pdf("./PDFs/report" + counter +".pdf",stylesheets=["style.css"])
+
+#Loop through all investors and print PDF
+for cnt, row in enumerate(list(sched_A1.groupby(['LP Schedule A Name']).groups)):
+    sched = dfp[dfp['LP Schedule A Name']==row] #row[]]
+    sched.loc['Total Distribution'] = sched.sum(numeric_only=True,axis=0)    
+    sched_final = sched
+    #print(sched.head())
+    print_pdfs(sched_final,str(cnt))
