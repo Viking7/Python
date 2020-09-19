@@ -1,0 +1,17 @@
+#Render HTML to PDF
+
+#Create Template using Jinja
+
+from jinja2 import Environment, FileSystemLoader
+env = Environment(loader=FileSystemLoader('.'))
+template = env.get_template("template2.html")
+
+template_vars = {"title" : "Distribution Schedule A",
+                 "sched_A1_table": sched_A1.to_html(),
+                "fund_name": "BREP Asia II L.P.",
+                "header": "Non-Promotable Gain"}
+
+html_out = template.render(template_vars)
+
+from weasyprint import HTML
+HTML(string=html_out, base_url=".").write_pdf("report2.pdf",stylesheets=["style.css"])
