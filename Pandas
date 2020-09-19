@@ -7,3 +7,17 @@ dfp.append(pd.Series(dfp.sum(),name='Total'))\
   
 df.loc['Column_Total']= df.sum(numeric_only=True, axis=0)
 df.loc[:,'Row_Total'] = df.sum(numeric_only=True, axis=1)
+
+
+#Looping in unique values of dataframe
+
+  #for row in sched_A1.itertuples(index=False):
+      #sched_A = sched_A1[sched_A1['LP Schedule A Name']==row[0]]
+      #print(sched_A.head(1))
+      #print(row[0])
+    
+   for row in list(sched_A1.groupby(['LP Schedule A Name']).groups):
+    #print(row)
+    sched = sched_A1[sched_A1['LP Schedule A Name']==row] #row[]]
+
+    print(sched.head()) 
