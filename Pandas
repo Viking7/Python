@@ -1,0 +1,9 @@
+#Add Rows Total
+
+dfp.append(dfp.sum(numeric_only=True).rename('Total distribution'))
+dfp.append(pd.Series(dfp.sum(),name='Total'))\
+  .assign(Total=dfp.sum(1))\
+  .set_value('Total','Total',dfp.values.sum())
+  
+df.loc['Column_Total']= df.sum(numeric_only=True, axis=0)
+df.loc[:,'Row_Total'] = df.sum(numeric_only=True, axis=1)
