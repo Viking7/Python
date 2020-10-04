@@ -1,0 +1,120 @@
+from __future__ import print_function
+import pandas as pd
+import numpy as np
+df = pd.read_excel("Datadump.xlsx")
+#df.head()
+
+dfp = df.groupby(['LP Schedule A Name','Display Deal Name'])[ 'ROC Proceeds','AFE','Recouped Loss','Gain','Income','Carry','Total Distribution'].sum().reset_index()
+dfp.head()
+
+#dfp.loc['Total Distribution'] = dfp.sum(numeric_only=True, axis=0)
+#sched_A1 = dfp
+
+#sched_A1.tail(18)
+
+from io import BytesIO
+
+#Create Template using Jinja
+from jinja2 import Environment, FileSystemLoader
+from weasyprint import HTML
+import os
+
+env = Environment(loader=FileSystemLoader('.'))
+template = env.get_template("ScheduleA.html")
+
+
+from flask import Flask
+from flask import make_response
+from flask import Response
+from flask import jsonify
+import zipfile #import ZipFile
+
+#Flask App
+app = Flask(__name__)
+
+#Upload Excel file
+@app.route("/upload", methods=['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+        return jsonify({"result": request.get_array(field_name='file')})
+    return '''
+    <!doctype html>
+    <title>Upload an excel file</title>
+    <h1>Excel file upload (csv, tsv, csvz, tsvz only)</h1>
+    <form action="" method=post enctype=multipart/form-data><p>
+    <input type=file name=file><input type=submit value=Upload>
+    </form>
+    '''
+
+#Render HTML and print to PDF
+def print_pdfs(schedule,  row):
+    template_vars = {"fund_name" : "BREP Asia II L.P.",
+                    "investor_name": row,
+                     "memo_date": "August 31, 2020",
+                     "sched_A1_table": schedule.to_html(),
+                     "header": "Non-Promotable Gain"}
+    ##/Newer test
+    html_out = template.render(template_vars)
+    document_html = HTML(string=html_out, base_url=request.build_absolute_uri())
+    document = document_html.render(stylesheets=["style.css"])
+    if len(document.pages) > 1:
+        for page in document.pages[1:]:
+            str(page)
+        pdf = document.write_pdf()
+    else:
+        pdf = document.write_pdf()
+    
+    #response = HttpResponse(pdf, content_type='application/pdf')
+    #response['Content-Disposition'] = 'filename="Schedule {0} | Schedule {0}.pdf"'.format(row[:10])
+    response = pdf  
+    
+    return response
+
+    
+def generate_zip(files):
+    mem_zip = BytesIO()
+
+    with zipfile.ZipFile(mem_zip, mode="w",compression=zipfile.ZIP_DEFLATED) as zf:
+        for f in files:
+            zf.write(f[0], f[1]) #zf.writestr(f[0], f[1])
+
+    return mem_zip.getvalue()
+
+    
+#Loop through all investors and print PDF
+@app.route("/main", methods=['GET', 'POST'])
+def main():
+    files = []
+    zf = zipfile.ZipFile('ScheduleA.zip', mode="w",compression=zipfile.ZIP_DEFLATED)
+    for cnt, row in enumerate(list(dfp.groupby(['LP Schedule A Name']).groups)):
+        sched = dfp[dfp['LP Schedule A Name']==row] #row[]]
+        sched.set_index('LP Schedule A Name', inplace=True)
+        sched.loc['Total Distribution'] = sched.sum(numeric_only=True,axis=0)    
+        template_vars = {"fund_name" : "BREP Asia II L.P.",
+                        "investor_name": row,
+                         "memo_date": "August 31, 2020",
+                         "sched_A1_table": sched.to_html(index=False),
+                         "header": "Non-Promotable Gain"}
+
+        html_out = template.render(template_vars)
+        document_html = HTML(string=html_out, base_url=".") #request.build_absolute_uri()
+        document = document_html.render(stylesheets=["style.css"])
+        #print("pages "+ str(len(document.pages)))
+
+        if len(document.pages) > 1:
+            for page in document.pages[1:]:
+                str(page)
+            pdf = document.write_pdf()
+        else:
+            pdf = document.write_pdf()
+        zn = zipfile.ZipFile('ScheduleA.zip', mode="a")
+        zn.writestr(str(cnt) + ' report ' + row[:10] + '.pdf',pdf) #os.path.relpath(),arcname=pdf) 
+        zn.close() 
+        #if cnt == 1: break
+    print('done')
+    
+if __name__ == "__main__":
+    #excel.init_excel(app)
+    app.run()  
+
+
