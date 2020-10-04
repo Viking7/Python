@@ -1,0 +1,3 @@
+#1 Get arguments of a function
+    import inspect 
+    print(inspect.getargspec(HTML.render).args)
