@@ -1,0 +1,19 @@
+#1 Send Zip file
+@app.route('/DownloadZip', methods=['POST'])
+def sendZip():
+    content = '{"type": "Point", "coordinates": [-105.01621, 39.57422]}'
+    data = {'json' : content}
+    r = requests.post('http://ogre.adc4gis.com/convertJson', data = data)
+    if r.status_code == 200:
+        zipDoc = zipfile.ZipFile(io.BytesIO(r.content))
+        return Response(zipDoc,
+                mimetype='application/zip',
+                headers={'Content-Disposition':'attachment;filename=zones.zip'})
+                
+Update above: You should return the file directly, not a ZipFile() object:
+
+r = requests.post('http://ogre.adc4gis.com/convertJson', data = data)
+if r.status_code == 200:
+    return Response(r.content,
+            mimetype='application/zip',
+            headers={'Content-Disposition':'attachment;filename=zones.zip'})
