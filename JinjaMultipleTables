@@ -1,0 +1,63 @@
+#1 App
+  from flask import *
+  import pandas as pd
+  app = Flask(__name__)
+
+  @app.route("/tables")
+  def show_tables():
+      data = pd.read_excel('dummy_data.xlsx')
+      data.set_index(['Name'], inplace=True)
+      data.index.name=None
+      females = data.loc[data.Gender=='f']
+      males = data.loc[data.Gender=='m']
+      return render_template('view.html',tables=[females.to_html(classes='female'), males.to_html(classes='male')],
+      titles = ['na', 'Female surfers', 'Male surfers'])
+
+  if __name__ == "__main__":
+      app.run(debug=True)
+    
+#2 HTML Template
+
+  <!doctype html>
+  <title>Simple tables</title>
+  <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+  <div class=page>
+    <h1>Surfer groups</h1>
+    {% for table in tables %}
+      <h2>{{titles[loop.index]}}</h2>
+      {{ table|safe }}
+    {% endfor %}
+  </div>
+  
+#3 CSS
+
+  body            { font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;}
+  a, h1, h2       { color: #377ba8; }
+  h1, h2          { margin: 0; }
+  h1              { border-bottom: 2px solid #eee; }
+  h2              { font-size: 1.2em; }
+
+  table.dataframe, .dataframe th, .dataframe td {
+    border: none;
+    border-bottom: 1px solid #C8C8C8;
+    border-collapse: collapse;
+    text-align:left;
+    padding: 10px;
+    margin-bottom: 40px;
+    font-size: 0.9em;
+  }
+
+  .male th {
+      background-color: #add8e6;
+      color: white;
+  }
+
+  .female th {
+      background-color: #77dd77;
+      color: white;
+  }
+
+  tr:nth-child(odd)		{ background-color:#eee; }
+  tr:nth-child(even)	{ background-color:#fff; }
+
+  tr:hover            { background-color: #ffff99;}
